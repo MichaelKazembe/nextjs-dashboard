@@ -1,6 +1,6 @@
 "use server";
 
-import {signIn} from "@/auth";
+import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 
 import { z } from "zod";
@@ -78,21 +78,21 @@ export async function updateInvoice(
   formData: FormData,
 ) {
   const validatedFields = UpdateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
+    customerId: formData.get("customerId"),
+    amount: formData.get("amount"),
+    status: formData.get("status"),
   });
- 
+
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Invoice.',
+      message: "Missing Fields. Failed to Update Invoice.",
     };
   }
- 
+
   const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
- 
+
   try {
     await sql`
       UPDATE invoices
@@ -100,19 +100,25 @@ export async function updateInvoice(
       WHERE id = ${id}
     `;
   } catch (error) {
-    return { message: 'Database Error: Failed to Update Invoice.' };
+    return { message: "Database Error: Failed to Update Invoice." };
   }
- 
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
+
+  revalidatePath("/dashboard/invoices");
+  redirect("/dashboard/invoices");
 }
 
 export async function deleteInvoice(id: string) {
-  throw new Error("Failed to Delete Invoice");
+  try {
+    await sql`
+      DELETE FROM invoices
+      WHERE id = ${id}
+    `;
+  } catch (error) {
+    throw new Error("Database Error: Failed to Delete Invoice.");
+  }
 
-  // Unreachable code block
-  await sql`DELETE FROM invoices WHERE id = ${id}`;
   revalidatePath("/dashboard/invoices");
+  redirect("/dashboard/invoices");
 }
 
 // Authentication Action
@@ -121,14 +127,14 @@ export async function authenticate(
   formData: FormData,
 ) {
   try {
-    await signIn('credentials', formData);
+    await signIn("credentials", formData);
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials.';
+        case "CredentialsSignin":
+          return "Invalid credentials.";
         default:
-          return 'Something went wrong.';
+          return "Something went wrong.";
       }
     }
     throw error;
